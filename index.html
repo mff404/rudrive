@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>АРМ оператора · Испытательный стенд ВЧРП</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================ ШАПКА ============================ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">ВЧ</div>
+    <div class="brand-text">
+      <div class="brand-title">Испытательный стенд ВЧРП</div>
+      <div class="brand-sub">АРМ оператора · стенд №2 · пост 3,4 · 6 кВ / 2,0 МВт</div>
+    </div>
+  </div>
+
+  <div class="tb-chips">
+    <div class="chip" id="chip-bench"><span class="dot"></span><span>Стенд: <b id="chip-bench-text">ОСТАНОВЛЕН</b></span></div>
+    <div class="chip" id="conn-plc"><span class="dot"></span><span>ПЛК S7-1500 · <b id="plc-ping">12 мс</b></span></div>
+    <div class="chip" id="conn-daq"><span class="dot"></span><span>Сбор данных · <b id="daq-rate">10 Гц</b></span></div>
+    <div class="chip chip-warn" id="chip-alarms" hidden><span class="dot"></span><span>Аварии: <b id="chip-alarm-n">0</b></span></div>
+    <div class="chip chip-rec" id="rec-ind" hidden><span class="dot"></span><span>ЗАПИСЬ <b id="rec-time">00:00</b></span></div>
+  </div>
+
+  <div class="tb-right">
+    <div class="clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="clock-date">--.--.----</div>
+    </div>
+    <button class="estop" id="btn-estop" title="Аварийный останов стенда (E-STOP)">
+      <span class="estop-ring"></span>
+      <span class="estop-label">АВАРИЙНЫЙ<br>ОСТАНОВ</span>
+    </button>
+  </div>
+</header>
+
+<div class="alarm-banner" id="alarm-banner" hidden>
+  <div class="ab-icon">!</div>
+  <div class="ab-text">
+    <b id="ab-title">АВАРИЯ</b>
+    <span id="ab-desc">—</span>
+  </div>
+  <div class="ab-time" id="ab-time">--:--:--</div>
+  <button class="ab-btn" id="ab-goto">Перейти к авариям</button>
+  <button class="ab-btn ghost" id="ab-ack">Квитировать</button>
+</div>
+
+<!-- ============================ КАРКАС ============================ -->
+<div class="shell">
+
+  <!-- ---------- ЛЕВАЯ НАВИГАЦИЯ: ЭТАПЫ USER FLOW ---------- -->
+  <nav class="rail">
+    <div class="rail-cap">Маршрут оператора</div>
+    <button class="rail-item" data-view="1">
+      <span class="ri-num">01</span>
+      <span class="ri-body"><span class="ri-title">Подготовка и проверка ВЧРП</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="2">
+      <span class="ri-num">02</span>
+      <span class="ri-body"><span class="ri-title">Настройка и запуск испытания</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="3">
+      <span class="ri-num">03</span>
+      <span class="ri-body"><span class="ri-title">Проведение в автоматическом режиме</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="4">
+      <span class="ri-num">04</span>
+      <span class="ri-body"><span class="ri-title">Мониторинг параметров</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="5">
+      <span class="ri-num">05</span>
+      <span class="ri-body"><span class="ri-title">Предупреждения и аварии</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="6">
+      <span class="ri-num">06</span>
+      <span class="ri-body"><span class="ri-title">Завершение и сохранение</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+    <button class="rail-item" data-view="7">
+      <span class="ri-num">07</span>
+      <span class="ri-body"><span class="ri-title">Анализ и протокол</span><span class="ri-state" data-state>не начато</span></span>
+    </button>
+
+    <div class="rail-foot">
+      <div class="rf-row"><span>Оператор</span><b>Иванов А. П.</b></div>
+      <div class="rf-row"><span>Смена</span><b>1 · 08:00–20:00</b></div>
+      <div class="rf-row"><span>Объект</span><b>ВЧРП-6-2000, зав. № 4417</b></div>
+    </div>
+  </nav>
+
+  <!-- ---------- РАБОЧАЯ ОБЛАСТЬ ---------- -->
+  <main class="views" id="views">
+
+    <!-- ============ ЭТАП 1. ПОДГОТОВКА И ПРОВЕРКА ============ -->
+    <section class="view" id="view-1">
+      <div class="view-head">
+        <div>
+          <h1>Подготовка и проверка ВЧРП</h1>
+          <p class="vh-sub">Осмотр, подключение, измерение изоляции, проверка цепей управления и охлаждения. Допуск стенда к испытанию.</p>
+        </div>
+        <div class="vh-right">
+          <div class="readiness">
+            <div class="ready-num"><b id="ready-done">0</b><span>/<span id="ready-total">12</span></span></div>
+            <div class="ready-cap">проверок пройдено</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <!-- паспорт -->
+        <div class="card">
+          <div class="card-head"><h2>Паспортные данные объекта испытаний</h2><span class="tag">ВЧРП-6-2000</span></div>
+          <div class="card-body">
+            <dl class="kv">
+              <div><dt>Тип</dt><dd>Высоковольтный преобразователь частоты (ВЧРП), многоуровневый</dd></div>
+              <div><dt>Заводской №</dt><dd>4417</dd></div>
+              <div><dt>Номинальное напряжение</dt><dd>6,0 кВ ± 10 %</dd></div>
+              <div><dt>Номинальная мощность</dt><dd>2,0 МВт</dd></div>
+              <div><dt>Номинальный ток</dt><dd>200 А</dd></div>
+              <div><dt>Диапазон частоты</dt><dd>2…50 Гц</dd></div>
+              <div><dt>Система охлаждения</dt><dd>жидкостная, замкнутый контур</dd></div>
+              <div><dt>Дата последнего ТО</dt><dd>14.02.2026</dd></div>
+              <div><dt>Наработка</dt><dd>1 284 ч</dd></div>
+              <div><dt>Нормативный документ</dt><dd>ТУ 3411-002-2026, ГОСТ Р 51524</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- схема -->
+        <div class="card">
+          <div class="card-head"><h2>Схема силового тракта</h2><span class="tag" id="schem-state">ожидание</span></div>
+          <div class="card-body">
+            <svg class="scheme" viewBox="0 0 760 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Схема стенда">
+              <!-- связи -->
+              <g class="wires">
+                <path class="wire flow" d="M118 74 H182"/>
+                <path class="wire flow" d="M318 74 H382"/>
+                <path class="wire flow" d="M518 74 H582"/>
+                <path class="wire flow" d="M662 108 V168"/>
+                <path class="wire flow" d="M582 204 H300"/>
+              </g>
+              <!-- сеть -->
+              <g class="node" id="nd-net">
+                <rect x="18" y="40" width="100" height="68" rx="8"/>
+                <text x="68" y="70">СЕТЬ 6 кВ</text><text x="68" y="88" class="sm">50 Гц</text>
+                <circle class="st" cx="106" cy="52" r="5"/>
+              </g>
+              <!-- вводной выключатель -->
+              <g class="node" id="nd-breaker">
+                <rect x="182" y="40" width="136" height="68" rx="8"/>
+                <text x="250" y="66">ВВОДНОЙ</text><text x="250" y="84">ВЫКЛЮЧАТЕЛЬ Q1</text>
+                <circle class="st" cx="306" cy="52" r="5"/>
+              </g>
+              <!-- трансформатор -->
+              <g class="node" id="nd-trans">
+                <rect x="382" y="40" width="136" height="68" rx="8"/>
+                <text x="450" y="66">ВВОДНОЙ</text><text x="450" y="84">ТРАНСФОРМАТОР T1</text>
+                <circle class="st" cx="506" cy="52" r="5"/>
+              </g>
+              <!-- ВЧРП -->
+              <g class="node node-main" id="nd-vfd">
+                <rect x="582" y="26" width="160" height="96" rx="10"/>
+                <text x="662" y="58" class="lg">ВЧРП</text>
+                <text x="662" y="78" class="sm">зав. № 4417</text>
+                <text x="662" y="98" class="sm" id="vfd-sub">ожидание</text>
+                <circle class="st" cx="730" cy="40" r="5"/>
+              </g>
+              <!-- охлаждение -->
+              <g class="node node-cool" id="nd-cool">
+                <rect x="18" y="166" width="150" height="68" rx="8"/>
+                <text x="93" y="192">СИСТЕМА</text><text x="93" y="210">ОХЛАЖДЕНИЯ</text>
+                <circle class="st" cx="156" cy="178" r="5"/>
+              </g>
+              <path class="wire cool" d="M168 200 H300" id="wire-cool"/>
+              <!-- нагрузка -->
+              <g class="node" id="nd-load">
+                <rect x="300" y="166" width="140" height="68" rx="8"/>
+                <text x="370" y="192">НАГРУЗОЧНЫЙ</text><text x="370" y="210">РЕАКТОР L1</text>
+                <circle class="st" cx="428" cy="178" r="5"/>
+              </g>
+              <!-- двигатель-генератор -->
+              <g class="node" id="nd-motor">
+                <rect x="470" y="166" width="132" height="68" rx="8"/>
+                <text x="536" y="192">МОТОР-</text><text x="536" y="210">ГЕНЕРАТОР M1</text>
+                <circle class="st" cx="590" cy="178" r="5"/>
+              </g>
+              <path class="wire flow" d="M440 200 H470"/>
+              <text x="640" y="196" class="note">Силовой тракт 6 кВ</text>
+              <text x="640" y="214" class="note">Ток до 300 А</text>
+            </svg>
+            <div class="legend">
+              <span><i class="lg-ok"></i>норма</span>
+              <span><i class="lg-off"></i>отключено</span>
+              <span><i class="lg-warn"></i>внимание</span>
+              <span><i class="lg-err"></i>неисправность</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt">
+        <div class="card-head">
+          <h2>Чек-лист подготовки</h2>
+          <div class="ch-actions">
+            <button class="btn ghost sm" id="btn-check-all">Выполнить все проверки</button>
+            <button class="btn ghost sm" id="btn-check-reset">Сбросить</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="checklist" id="checklist"></div>
+        </div>
+        <div class="card-foot">
+          <div class="ready-bar"><div class="ready-fill" id="ready-fill"></div></div>
+          <div class="cf-right">
+            <span class="cf-note" id="ready-note">Выполните проверки, чтобы допустить стенд к испытанию</span>
+            <button class="btn primary" id="btn-ready" disabled>Допустить стенд к испытанию</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 2. НАСТРОЙКА И ЗАПУСК ============ -->
+    <section class="view" id="view-2">
+      <div class="view-head">
+        <div>
+          <h1>Настройка и запуск испытания</h1>
+          <p class="vh-sub">Выбор программы, уставки защиты, профиль ступеней, проверка корректности и пуск в автоматическом режиме.</p>
+        </div>
+        <div class="vh-right"><div class="badge-soft">Стенд допущен · <b id="v2-ready">нет</b></div></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Программа испытаний</h2></div>
+          <div class="card-body">
+            <div class="prog-cards" id="prog-cards"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Уставки и параметры</h2><span class="tag">ТУ 3411-002-2026</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <label>Номинальное напряжение, кВ<input type="number" id="f-unom" value="6.0" step="0.1" min="0" max="7.2"></label>
+              <label>Номинальная частота, Гц<input type="number" id="f-fnom" value="50" step="1" min="1" max="60"></label>
+              <label>Номинальный ток, А<input type="number" id="f-inom" value="200" step="5" min="10" max="400"></label>
+              <label>Порог предупреждения по току, А<input type="number" id="f-iwarn" value="210" step="5"></label>
+              <label>Порог аварии по току, А<input type="number" id="f-itrip" value="240" step="5"></label>
+              <label>Порог предупреждения по температуре, °C<input type="number" id="f-twarn" value="70" step="1"></label>
+              <label>Порог аварии по температуре, °C<input type="number" id="f-ttrip" value="85" step="1"></label>
+              <label>Скорость нарастания U, кВ/с<input type="number" id="f-ramp" value="0.6" step="0.1" min="0.1" max="3"></label>
+              <label>Выдержка на номинале, с<input type="number" id="f-hold" value="20" step="1" min="1" max="600"></label>
+              <label>Режим нагружения
+                <select id="f-loadmode">
+                  <option>Плавный (V/f)</option>
+                  <option>Ступенчатый</option>
+                  <option>Момент постоянный</option>
+                </select>
+              </label>
+              <label>Число циклов<input type="number" id="f-cycles" value="1" step="1" min="1" max="20"></label>
+              <label>Тип нагрузки
+                <select id="f-loadtype">
+                  <option>Реактор + мотор-генератор (рекуперация)</option>
+                  <option>Активная нагрузка (балласт)</option>
+                  <option>Имитатор двигателя</option>
+                </select>
+              </label>
+            </div>
+            <div class="hint">Изменение уставок возможно только при остановленном стенде. Уставки защиты фиксируются в протоколе.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 mt">
+        <div class="card">
+          <div class="card-head">
+            <h2>Профиль испытания (ступени)</h2>
+            <div class="ch-actions">
+              <button class="btn ghost sm" id="btn-add-step">+ ступень</button>
+              <button class="btn ghost sm" id="btn-del-step">− последняя</button>
+            </div>
+          </div>
+          <div class="card-body no-pad">
+            <table class="tbl tbl-edit">
+              <thead><tr><th>#</th><th>Частота, %</th><th>Напряжение, %</th><th>Нагрузка, %</th><th>Длительность, с</th></tr></thead>
+              <tbody id="profile-body"></tbody>
+            </table>
+          </div>
+          <div class="card-foot between">
+            <span class="cf-note">Суммарная длительность: <b id="prof-total">0</b> с</span>
+            <span class="cf-note">Ступеней: <b id="prof-count">0</b></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Предпросмотр профиля и проверка уставок</h2></div>
+          <div class="card-body">
+            <canvas class="chart chart-sm" id="profile-canvas"></canvas>
+            <div class="valid-list" id="valid-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <div class="ab-left">
+          <div class="ab-note">Пуск сопровождается предпусковой проверкой: заземление, двери шкафов, отсутствие людей в зоне, давление охлаждения.</div>
+        </div>
+        <div class="ab-right">
+          <button class="btn ghost" id="btn-save-profile">Сохранить профиль</button>
+          <button class="btn primary lg" id="btn-start">▶ ПУСК ИСПЫТАНИЯ</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 3. АВТОМАТИЧЕСКИЙ РЕЖИМ ============ -->
+    <section class="view" id="view-3">
+      <div class="view-head">
+        <div>
+          <h1>Проведение испытания в автоматическом режиме</h1>
+          <p class="vh-sub">Контроллер стенда отрабатывает профиль и уставки без участия оператора. Оператор контролирует ход и вмешивается при отклонениях.</p>
+        </div>
+        <div class="vh-right">
+          <div class="run-state" id="run-state"><span class="dot"></span><b>ОСТАНОВЛЕН</b></div>
+        </div>
+      </div>
+
+      <div class="card run-hero">
+        <div class="card-body">
+          <div class="run-grid">
+            <div class="run-cell">
+              <div class="rc-cap">Программа</div>
+              <div class="rc-val" id="run-prog">—</div>
+              <div class="rc-sub" id="run-prog-sub">не выбрана</div>
+            </div>
+            <div class="run-cell">
+              <div class="rc-cap">Текущая ступень</div>
+              <div class="rc-val"><b id="run-step">—</b> <span class="muted" id="run-step-total"></span></div>
+              <div class="rc-sub" id="run-step-desc">—</div>
+            </div>
+            <div class="run-cell">
+              <div class="rc-cap">Время испытания</div>
+              <div class="rc-val mono" id="run-time">00:00</div>
+              <div class="rc-sub">осталось <b id="run-remaining">--:--</b></div>
+            </div>
+            <div class="run-cell">
+              <div class="rc-cap">Задано / фактически</div>
+              <div class="rc-val mono"><span id="run-setpoint">0,0 Гц · 0,00 кВ</span></div>
+              <div class="rc-sub mono" id="run-actual">0,0 Гц · 0,00 кВ</div>
+            </div>
+            <div class="run-cell">
+              <div class="rc-cap">Автоматических действий</div>
+              <div class="rc-val"><b id="run-actions">0</b></div>
+              <div class="rc-sub">отклонений: <b id="run-devs">0</b></div>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress"><div class="progress-fill" id="run-progress"></div></div>
+            <div class="progress-cap"><span id="run-progress-text">0 %</span><span id="run-progress-hint">ожидание пуска</span></div>
+          </div>
+          <div class="run-controls">
+            <button class="btn" id="btn-pause" disabled>⏸ Пауза</button>
+            <button class="btn ghost" id="btn-stop-run" disabled>■ Штатный останов</button>
+            <button class="btn danger" id="btn-estop2">АВАРИЙНЫЙ ОСТАНОВ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 mt">
+        <div class="card">
+          <div class="card-head"><h2>Ступени программы</h2><span class="tag" id="steps-state">ожидание</span></div>
+          <div class="card-body">
+            <div class="steps" id="step-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Журнал автоматики</h2><span class="tag live">онлайн</span></div>
+          <div class="card-body no-pad">
+            <div class="log" id="auto-log"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt">
+        <div class="card-head"><h2>Автоматические воздействия системы</h2></div>
+        <div class="card-body">
+          <div class="auto-act" id="auto-actions"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 4. МОНИТОРИНГ ============ -->
+    <section class="view" id="view-4">
+      <div class="view-head">
+        <div>
+          <h1>Мониторинг параметров в реальном времени</h1>
+          <p class="vh-sub">Частота опроса 10 Гц. Тренды скользящего окна 120 с, осциллограмма выходного напряжения, спектр гармоник.</p>
+        </div>
+        <div class="vh-right"><div class="badge-soft">Окно трендов: <b id="win-sec">120</b> с · точек: <b id="pt-count">0</b></div></div>
+      </div>
+
+      <div class="gauges">
+        <div class="gauge-card"><canvas id="g-u"></canvas><div class="g-cap">Выходное напряжение</div></div>
+        <div class="gauge-card"><canvas id="g-i"></canvas><div class="g-cap">Выходной ток</div></div>
+        <div class="gauge-card"><canvas id="g-f"></canvas><div class="g-cap">Выходная частота</div></div>
+        <div class="gauge-card"><canvas id="g-p"></canvas><div class="g-cap">Выходная мощность</div></div>
+        <div class="gauge-card"><canvas id="g-cos"></canvas><div class="g-cap">Коэффициент мощности</div></div>
+        <div class="gauge-card"><canvas id="g-t"></canvas><div class="g-cap">Температура модулей IGBT</div></div>
+      </div>
+
+      <div class="grid grid-2 mt">
+        <div class="card">
+          <div class="card-head"><h2>Выходное напряжение и ток</h2><span class="tag">окно 120 с</span></div>
+          <div class="card-body"><canvas class="chart" id="c-power"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Частота и промежуточный контур</h2><span class="tag">окно 120 с</span></div>
+          <div class="card-body"><canvas class="chart" id="c-freq"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3 mt">
+        <div class="card">
+          <div class="card-head"><h2>Температуры</h2></div>
+          <div class="card-body"><canvas class="chart" id="c-therm"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Осциллограмма U вых (фаза A)</h2><span class="tag live">live</span></div>
+          <div class="card-body"><canvas class="chart" id="c-wave"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Спектр гармоник, %</h2><span class="tag">THD <b id="thd-val">—</b> %</span></div>
+          <div class="card-body"><canvas class="chart" id="c-harm"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card mt">
+        <div class="card-head"><h2>Таблица каналов измерений</h2><span class="tag" id="ch-state">нет данных</span></div>
+        <div class="card-body no-pad">
+          <table class="tbl">
+            <thead><tr><th>Канал</th><th class="num">Текущее</th><th class="num">Мин</th><th class="num">Макс</th><th class="num">Среднее</th><th class="num">Предупр.</th><th class="num">Авария</th><th>Статус</th></tr></thead>
+            <tbody id="ch-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 5. АВАРИИ ============ -->
+    <section class="view" id="view-5">
+      <div class="view-head">
+        <div>
+          <h1>Работа с предупреждениями и авариями</h1>
+          <p class="vh-sub">Квитирование, анализ причин, рекомендуемые действия, автоматические защиты. Все события фиксируются в журнале.</p>
+        </div>
+        <div class="vh-right">
+          <div class="al-counters">
+            <div class="alc err"><b id="cnt-alarm">0</b><span>аварии</span></div>
+            <div class="alc warn"><b id="cnt-warn">0</b><span>предупреждения</span></div>
+            <div class="alc info"><b id="cnt-info">0</b><span>информация</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-side mt0">
+        <div class="card">
+          <div class="card-head">
+            <h2>Журнал событий</h2>
+            <div class="ch-actions">
+              <div class="chips" id="al-filter">
+                <button class="chip-btn active" data-alfilter="all">Все</button>
+                <button class="chip-btn" data-alfilter="alarm">Аварии</button>
+                <button class="chip-btn" data-alfilter="warn">Предупреждения</button>
+                <button class="chip-btn" data-alfilter="info">Информация</button>
+                <button class="chip-btn" data-alfilter="active">Неквитированные</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body no-pad">
+            <div class="tbl-scroll">
+              <table class="tbl tbl-al">
+                <thead><tr><th>Время</th><th>Код</th><th>Уровень</th><th>Параметр</th><th class="num">Значение</th><th class="num">Уставка</th><th>Состояние</th><th></th></tr></thead>
+                <tbody id="alarm-body"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="alarm-empty">Событий нет. Стенд работает в штатном режиме.</div>
+          </div>
+          <div class="card-foot between">
+            <div class="ch-actions">
+              <button class="btn ghost sm" id="btn-ack-all">Квитировать все</button>
+              <button class="btn ghost sm" id="btn-alarm-export">Экспорт журнала (CSV)</button>
+            </div>
+            <span class="cf-note">Показано: <b id="al-shown">0</b> из <b id="al-total">0</b></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Разбор события</h2></div>
+          <div class="card-body">
+            <div id="alarm-detail" class="detail empty-sm">Выберите событие в журнале для разбора причин и рекомендуемых действий.</div>
+          </div>
+          <div class="card-foot col">
+            <div class="cf-title">Имитация для проверки алгоритмов</div>
+            <div class="ch-actions">
+              <button class="btn ghost sm" id="btn-inject-warn">Смоделировать предупреждение</button>
+              <button class="btn ghost sm" id="btn-inject-alarm">Смоделировать аварию</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 6. ЗАВЕРШЕНИЕ ============ -->
+    <section class="view" id="view-6">
+      <div class="view-head">
+        <div>
+          <h1>Завершение и сохранение испытания</h1>
+          <p class="vh-sub">Штатный останов, разрядка звена постоянного тока, заземление, фиксация массива данных и параметров сессии.</p>
+        </div>
+        <div class="vh-right"><div class="badge-soft">Состояние: <b id="v6-state">испытание не начато</b></div></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Процедура останова</h2>
+            <button class="btn sm" id="btn-stop-proc">Выполнить останов</button>
+          </div>
+          <div class="card-body">
+            <div class="stop-steps" id="stop-steps"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Параметры сессии</h2></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <label>Наименование испытания<input id="s-name" value="Приёмо-сдаточные испытания ВЧРП-6-2000 № 4417"></label>
+              <label>Объект<input id="s-object" value="ВЧРП-6-2000, зав. № 4417"></label>
+              <label>Оператор<input id="s-operator" value="Иванов А. П."></label>
+              <label>Заказчик<input id="s-customer" value="АО «ЭнергоМаш»"></label>
+              <label class="span2">Комментарий<textarea id="s-comment" rows="3" placeholder="Особенности проведения, отклонения, замечания…">Испытание проведено по ТУ 3411-002-2026. Отклонений в работе оборудования не выявлено.</textarea></label>
+              <label class="span2">Метки<input id="s-tags" value="ПСИ, 6 кВ, рекуперация, 2026-041"></label>
+            </div>
+            <div class="save-opts">
+              <div class="so-title">Сохранить в архив сессии:</div>
+              <label class="cb"><input type="checkbox" id="s-save-trends" checked> тренды параметров (10 Гц)</label>
+              <label class="cb"><input type="checkbox" id="s-save-wave" checked> осциллограммы U/I</label>
+              <label class="cb"><input type="checkbox" id="s-save-log" checked> журнал событий и действий</label>
+              <label class="cb"><input type="checkbox" id="s-save-raw" checked> сырые данные каналов (CSV)</label>
+              <label class="cb"><input type="checkbox" id="s-save-video"> видеофиксация зоны стенда</label>
+            </div>
+          </div>
+          <div class="card-foot between">
+            <span class="cf-note" id="save-note">Данные не сохранены</span>
+            <div class="ch-actions">
+              <button class="btn ghost sm" id="btn-json">Экспорт сессии (JSON)</button>
+              <button class="btn primary" id="btn-save-session">Сохранить испытание</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-3 mt">
+        <div class="card">
+          <div class="card-head"><h2>Итог испытания</h2></div>
+          <div class="card-body">
+            <div class="verdict-sm" id="fin-verdict">—</div>
+            <dl class="kv tight">
+              <div><dt>Длительность</dt><dd id="fin-dur">—</dd></div>
+              <div><dt>Ступеней пройдено</dt><dd id="fin-steps">—</dd></div>
+              <div><dt>Аварий</dt><dd id="fin-alarms">—</dd></div>
+              <div><dt>Предупреждений</dt><dd id="fin-warns">—</dd></div>
+              <div><dt>Объём данных</dt><dd id="fin-size">—</dd></div>
+            </dl>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Сохранённые артефакты</h2></div>
+          <div class="card-body">
+            <div class="files" id="file-list"><div class="empty-sm">Артефакты появятся после сохранения.</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Экспорт данных</h2></div>
+          <div class="card-body">
+            <p class="muted sm">Массивы доступны для внешней обработки (MATLAB, Python, Excel) и приложения к протоколу.</p>
+            <div class="stack">
+              <button class="btn ghost" id="btn-csv">Тренды → CSV</button>
+              <button class="btn ghost" id="btn-csv-log">Журнал событий → CSV</button>
+              <button class="btn ghost" id="btn-csv-wave">Осциллограмма → CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ЭТАП 7. АНАЛИЗ И ПРОТОКОЛ ============ -->
+    <section class="view" id="view-7">
+      <div class="view-head">
+        <div>
+          <h1>Анализ результатов и формирование протокола</h1>
+          <p class="vh-sub">Сопоставление измеренных значений с нормами ТУ, статистика по трендам, итоговый вердикт и печатная форма протокола.</p>
+        </div>
+        <div class="vh-right"><div class="badge-soft">Записей в сессии: <b id="v7-samples">0</b></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Сводная таблица соответствия</h2><span class="tag">ТУ 3411-002-2026 · ГОСТ Р 51524</span></div>
+        <div class="card-body no-pad">
+          <table class="tbl">
+            <thead><tr><th>№</th><th>Контролируемый параметр</th><th>Норма</th><th class="num">Измерено</th><th class="num">Отклонение</th><th>Вердикт</th></tr></thead>
+            <tbody id="cmp-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid grid-2 mt">
+        <div class="card">
+          <div class="card-head"><h2>Тренд испытания целиком</h2><span class="tag">измерение / задание</span></div>
+          <div class="card-body"><canvas class="chart" id="c-full"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Статистика по каналам</h2></div>
+          <div class="card-body no-pad">
+            <div class="tbl-scroll">
+              <table class="tbl">
+                <thead><tr><th>Канал</th><th class="num">Мин</th><th class="num">Макс</th><th class="num">Среднее</th><th class="num">σ</th><th class="num">Размах</th></tr></thead>
+                <tbody id="stats-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt verdict-card" id="verdict-card">
+        <div class="card-body">
+          <div class="vc-mark" id="vc-mark">—</div>
+          <div class="vc-text">
+            <h2 id="vc-title">Испытание не завершено</h2>
+            <p id="vc-desc">Выполните испытание, чтобы система рассчитала соответствие нормам и сформировала протокол.</p>
+            <div class="vc-facts" id="vc-facts"></div>
+          </div>
+          <div class="vc-actions">
+            <button class="btn primary lg" id="btn-protocol">Сформировать протокол</button>
+            <button class="btn ghost" id="btn-print">Печать / PDF</button>
+            <button class="btn ghost" id="btn-archive">Отправить в архив</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ---------- ПРАВАЯ ПАНЕЛЬ: ЖИВЫЕ ДАННЫЕ ---------- -->
+  <aside class="side">
+    <div class="side-block">
+      <div class="sb-head">Ключевые параметры <span class="tag live">10 Гц</span></div>
+      <div class="mini-params" id="mini-params"></div>
+    </div>
+    <div class="side-block">
+      <div class="sb-head">Активные аварии <span class="al-badge" id="side-al-badge">0</span></div>
+      <div class="side-alarms" id="side-alarms"><div class="empty-sm">Активных аварий нет</div></div>
+    </div>
+    <div class="side-block grow">
+      <div class="sb-head">Последние события</div>
+      <div class="side-events" id="side-events"><div class="empty-sm">Событий нет</div></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ============================ СТАТУС-СТРОКА ============================ -->
+<footer class="statusbar">
+  <span>АРМ-ВЧРП · ПО v2.4.1</span>
+  <span class="sep"></span>
+  <span>ПЛК: <b id="sb-plc" class="ok">связь есть</b></span>
+  <span>DAQ: <b id="sb-daq">норма</b></span>
+  <span class="sep"></span>
+  <span>Опрос: <b>10 Гц</b></span>
+  <span>Буфер: <b id="sb-buf">0</b> точек</span>
+  <span>Запись: <b id="sb-rec">остановлена</b></span>
+  <span class="sep"></span>
+  <span class="sb-right">Скорость модельного времени:</span>
+  <div class="speed" id="speed-sel">
+    <button data-speed="1">×1</button>
+    <button data-speed="2">×2</button>
+    <button data-speed="5" class="active">×5</button>
+    <button data-speed="10">×10</button>
+    <button data-speed="20">×20</button>
+  </div>
+</footer>
+
+<!-- ============================ МОДАЛЬНОЕ ОКНО ПУСКА ============================ -->
+<div class="modal-back" id="modal-start" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Подтверждение пуска испытания</h2>
+      <button class="modal-x" id="mst-cancel-x">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-warn">
+        <b>Внимание.</b> После подтверждения силовой тракт будет подан под напряжение 6 кВ. Убедитесь, что зона стенда свободна, двери шкафов закрыты, заземляющие разъединители отключены.
+      </div>
+      <div class="mst-grid" id="mst-summary"></div>
+      <div class="mst-checks">
+        <label class="cb"><input type="checkbox" id="mst-ack-zone"> Зона стенда свободна, ограждения установлены</label>
+        <label class="cb"><input type="checkbox" id="mst-ack-doors"> Двери шкафов закрыты, блокировки исправны</label>
+        <label class="cb"><input type="checkbox" id="mst-ack-cool"> Охлаждение включено, давление в норме</label>
+        <label class="cb"><input type="checkbox" id="mst-ack-host"> Согласование с руководителем испытаний получено</label>
+      </div>
+      <label class="mst-op">Оператор, подтверждающий пуск<input id="mst-operator" value="Иванов А. П."></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="mst-cancel">Отмена</button>
+      <button class="btn primary" id="mst-confirm" disabled>Подтвердить и пустить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- область печати протокола -->
+<div id="print-root" class="print-root"></div>
+
+<script src="sim.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
